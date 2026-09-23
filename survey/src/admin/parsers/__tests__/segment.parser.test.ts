@@ -21,51 +21,107 @@ describe('parseSegmentAttributes', () => {
         );
 
     test.each([
-        ['paid', 'yes', { status: 'answered', value: true }],
-        ['not paid', 'no', { status: 'answered', value: false }],
-        ['not known', 'dontKnow', { status: 'dont_know' }]
-    ])('should convert the parking choice for %s', (_description, choice, expected) => {
+        {
+            description: 'paid',
+            choice: 'yes',
+            expected: { status: 'answered', value: true }
+        },
+        {
+            description: 'not paid',
+            choice: 'no',
+            expected: { status: 'answered', value: false }
+        },
+        {
+            description: 'not known',
+            choice: 'dontKnow',
+            expected: { status: 'dont_know' }
+        }
+    ])('should convert the parking choice for $description', ({ choice, expected }) => {
         expect(parse({ paidForParking: choice }).paidForParking).toEqual(expected);
     });
 
     test.each([
-        ['no parking answer', undefined],
-        ['an answer already wrapped', { status: 'refusal' }]
-    ])('should leave %s as it is', (_description, paidForParking) => {
+        {
+            description: 'no parking answer',
+            paidForParking: undefined
+        },
+        {
+            description: 'an answer already wrapped',
+            paidForParking: { status: 'refusal' }
+        },
+        {
+            description: 'an unrecognized parking choice',
+            paidForParking: 'noPark'
+        }
+    ])('should leave $description as it is', ({ paidForParking }) => {
         expect(parse({ paidForParking }).paidForParking).toEqual(paidForParking);
-    });
-
-    it('should keep an unrecognized parking choice on paidForParking', () => {
-        const result = parse({ paidForParking: 'noPark' });
-
-        expect(result.paidForParking).toBe('noPark');
     });
 
     const householdMemberUuid = uuidV4();
 
     test.each([
-        ['a member of the household', householdMemberUuid, 'householdMember', householdMemberUuid],
-        ['a family member', 'familyMember', 'familyMember', undefined],
-        ['a colleague', 'colleague', 'colleague', undefined],
-        ['a taxi driver', 'taxiDriver', 'taxiDriver', undefined],
-        ['a transit taxi driver', 'transitTaxiDriver', 'transitTaxiDriver', undefined],
-        ['a paratransit driver', 'paratransit', 'paratransit', undefined],
-        ['a carpool driver', 'carpool', 'carpool', undefined],
-        ['another driver', 'other', 'other', undefined],
-        ['an unknown driver', 'dontKnow', 'dontKnow', undefined],
-        ['no driver answer', undefined, undefined, undefined]
-    ])('should read the driver answer for %s', (_description, driver, expectedType, expectedUuid) => {
+        {
+            description: 'a member of the household',
+            driver: householdMemberUuid,
+            expected: { driverType: 'householdMember', driverUuid: householdMemberUuid }
+        },
+        {
+            description: 'a family member',
+            driver: 'familyMember',
+            expected: { driverType: 'familyMember', driverUuid: undefined }
+        },
+        {
+            description: 'a colleague',
+            driver: 'colleague',
+            expected: { driverType: 'colleague', driverUuid: undefined }
+        },
+        {
+            description: 'a taxi driver',
+            driver: 'taxiDriver',
+            expected: { driverType: 'taxiDriver', driverUuid: undefined }
+        },
+        {
+            description: 'a transit taxi driver',
+            driver: 'transitTaxiDriver',
+            expected: { driverType: 'transitTaxiDriver', driverUuid: undefined }
+        },
+        {
+            description: 'a paratransit driver',
+            driver: 'paratransit',
+            expected: { driverType: 'paratransit', driverUuid: undefined }
+        },
+        {
+            description: 'a carpool driver',
+            driver: 'carpool',
+            expected: { driverType: 'carpool', driverUuid: undefined }
+        },
+        {
+            description: 'another driver',
+            driver: 'other',
+            expected: { driverType: 'other', driverUuid: undefined }
+        },
+        {
+            description: 'an unknown driver',
+            driver: 'dontKnow',
+            expected: { driverType: 'dontKnow', driverUuid: undefined }
+        },
+        {
+            description: 'no driver answer',
+            driver: undefined,
+            expected: { driverType: undefined, driverUuid: undefined }
+        },
+        {
+            description: 'an unsupported driver choice',
+            driver: 'neighbor',
+            expected: { driverType: undefined, driverUuid: undefined }
+        }
+    ])('should read the driver answer for $description', ({ driver, expected }) => {
         const result = parse({ driver });
 
-        expect(result.driverType).toEqual(expectedType);
-        expect(result.driverUuid).toEqual(expectedUuid);
-    });
-
-    it('should leave an unsupported driver choice unmapped', () => {
-        const result = parse({ driver: 'neighbor' });
-
-        expect(result.driverType).toBeUndefined();
-        expect(result.driverUuid).toBeUndefined();
-        expect(result.driver).toBe('neighbor');
+        expect({
+            driverType: result.driverType,
+            driverUuid: result.driverUuid
+        }).toEqual(expected);
+        expect(result.driver).toEqual(driver);
     });
 });
